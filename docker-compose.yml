@@ -6,7 +6,7 @@ services:
       - mongo-data:/data/db
 
   backend:
-    image: yourdockerhub/backend:latest
+    image: tew56789/todo-backend:latest
     ports:
       - "5000:5000"
     environment:
@@ -15,7 +15,7 @@ services:
       - mongo
 
   frontend:
-    image: yourdockerhub/frontend:latest
+    image: tew56789/todo-frontend:latest
     ports:
       - "80:80"
     depends_on:
