@@ -1,23 +1,20 @@
-require("dotenv").config();
-
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
 
-// ===== Middleware =====
+/* ---------- MIDDLEWARE ---------- */
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // สำคัญมาก ถ้าไม่มี req.body จะเป็น undefined
 
-// ===== MongoDB =====
+/* ---------- DATABASE ---------- */
 mongoose
-  .connect(process.env.MONGO_URL)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB error:", err));
+  .connect(process.env.MONGO_URL || "mongodb://localhost:27017/todo")
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB error:", err));
 
-// ===== Schema & Model =====
+/* ---------- MODEL ---------- */
 const TodoSchema = new mongoose.Schema(
   {
     title: {
@@ -34,28 +31,39 @@ const TodoSchema = new mongoose.Schema(
 
 const Todo = mongoose.model("Todo", TodoSchema);
 
-// ===== Health & Root =====
+/* ---------- ROUTES ---------- */
+
+// health check
 app.get("/", (req, res) => {
   res.send("Todo API is running");
 });
 
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
-
-// ===== API Routes =====
+// get all todos
 app.get("/todos", async (req, res) => {
   const todos = await Todo.find().sort({ createdAt: -1 });
   res.json(todos);
 });
 
+// ✅ create todo (เพิ่ม console.log ตามที่ขอ)
 app.post("/todos", async (req, res) => {
-  const todo = new Todo({ title: req.body.title });
-  await todo.save();
-  res.status(201).json(todo);
+  try {
+    console.log("📥 POST /todos body =", req.body);
+
+    const todo = await Todo.create({
+      title: req.body.title,
+    });
+
+    console.log("✅ Saved todo =", todo);
+
+    res.status(201).json(todo);
+  } catch (err) {
+    console.error("❌ Create todo error:", err);
+    res.status(500).json({ message: "Create todo failed" });
+  }
 });
 
-app.put("/todos/:id", async (req, res) => {
+// toggle todo
+app.patch("/todos/:id", async (req, res) => {
   const todo = await Todo.findByIdAndUpdate(
     req.params.id,
     { completed: req.body.completed },
@@ -64,13 +72,13 @@ app.put("/todos/:id", async (req, res) => {
   res.json(todo);
 });
 
+// delete todo
 app.delete("/todos/:id", async (req, res) => {
   await Todo.findByIdAndDelete(req.params.id);
-  res.json({ message: "Deleted" });
+  res.sendStatus(204);
 });
 
-// ===== Server =====
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
-);
+/* ---------- START SERVER ---------- */
+app.listen(5000, () => {
+  console.log("🚀 Backend running on port 5000");
+});

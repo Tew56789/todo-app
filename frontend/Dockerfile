@@ -1,13 +1,24 @@
-# build stage
-FROM node:18 AS build
+# ===== Build Stage =====
+FROM node:18 AS builder
+
 WORKDIR /app
+
+# ติดตั้ง dependencies
 COPY package*.json ./
 RUN npm install
+
+# copy source + build
 COPY . .
 RUN npm run build
 
-# production stage
+# ===== Runtime Stage =====
 FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
+
+# copy build output ไป nginx
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# expose web port
 EXPOSE 80
+
+# nginx start (default)
 CMD ["nginx", "-g", "daemon off;"]
